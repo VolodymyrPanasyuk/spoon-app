@@ -12,7 +12,7 @@ every OS.
 This repository is Spoon's **landing page** — what it is, how to get it, how to verify what you downloaded,
 and where to report problems. It does not contain any source code; Spoon's source is private.
 
-- **Download:** [spoon-releases → Releases](https://github.com/VolodymyrPanasyuk/spoon-releases/releases)
+- **Download:** [Releases](https://github.com/VolodymyrPanasyuk/spoon-app/releases)
 - **Report a problem:** [open an issue in this repository](https://github.com/VolodymyrPanasyuk/spoon-app/issues)
 
 ---
@@ -64,7 +64,7 @@ published here, independent of OS-level code signing.
 ## Download & install
 
 Grab the installer for your OS from the
-[latest release](https://github.com/VolodymyrPanasyuk/spoon-releases/releases/latest).
+[latest release](https://github.com/VolodymyrPanasyuk/spoon-app/releases/latest).
 
 ### Windows
 
@@ -108,8 +108,8 @@ Notes:
 ## Verifying your download
 
 Every release publishes a `SHA256SUMS` manifest and a detached GPG signature, `SHA256SUMS.asc`, alongside
-the installers. The public key is published in the
-[spoon-releases repository](https://github.com/VolodymyrPanasyuk/spoon-releases) as `SPOON-GPG-KEY.asc`.
+the installers. The public key is published in this repository as
+[`SPOON-GPG-KEY.asc`](SPOON-GPG-KEY.asc).
 
 ```bash
 # 1. Import the public key once (skip this if you've already imported it before)
