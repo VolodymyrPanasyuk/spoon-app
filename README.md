@@ -25,15 +25,19 @@ codebase, one feature set, on all three desktop OSes.
 
 ## Status: beta software
 
-**Spoon is in active beta.** The current release is a **prerelease** (`v0.1.0-beta.3` as of this writing).
-The core feature set is functional and gets daily use, but:
+[![Latest release](https://img.shields.io/github/v/release/VolodymyrPanasyuk/spoon-app?include_prereleases&label=latest%20release)](https://github.com/VolodymyrPanasyuk/spoon-app/releases)
+
+**Spoon is in active beta.** Every release published so far is a prerelease — the badge above tracks the
+current one. The core feature set is functional and gets daily use, but:
 
 - **Nothing is code-signed or notarized yet.** See the [unsigned installers](#a-note-on-unsigned-installers)
   note below before you install — this is not a bug, it's expected for now.
 - **No stable release has shipped.** Expect rough edges, and expect things to change between betas.
-- **Git LFS, submodules, and worktrees are not supported yet.** If your repository uses Git LFS in
-  particular, avoid staging or committing through Spoon for now — it can corrupt LFS pointer files, since
-  Spoon doesn't yet understand them.
+- **Git LFS setup is not Spoon's job.** Spoon never runs `git lfs install`/`track`/`fetch`/`push` itself, so
+  set LFS up with the `git` CLI first. Once a repository is LFS-tracked, staging and committing whole files
+  through Spoon is safe — git's own LFS filters run exactly as they would from your terminal. Spoon blocks
+  the one operation that could corrupt a pointer file: staging, unstaging, or discarding only *part* of an
+  LFS-tracked file through the per-hunk or per-line diff view. It tells you to act on the whole file instead.
 
 If something breaks, [file an issue](https://github.com/VolodymyrPanasyuk/spoon-app/issues) — beta feedback
 is exactly what this stage is for.
@@ -57,20 +61,34 @@ published here, independent of OS-level code signing.
 
 ## Requirements
 
-- **Git must already be installed** and on your `PATH`. Spoon doesn't bundle its own — it shells out to
-  your real `git` for every operation that changes a repository (commit, stage, merge, push, …), so it
-  behaves exactly like your terminal, including your existing credential helpers and SSH setup.
+Whether you need `git` installed first depends on which package you pick:
+
+- **Windows `Setup.exe`** and the **Linux Flatpak** bundle their own `git` — nothing to install first.
+- **Linux `.deb` / `.rpm` / `.pkg.tar.zst`** declare `git` as a package dependency, so your package manager
+  pulls it in for you if it's missing.
+- **Windows `.msi`**, **macOS `.pkg`**, and the **Linux AppImage** do *not* bundle `git`. For these, git
+  must already be installed and on your `PATH`.
+
+Whichever `git` Spoon ends up using, it shells out to it for every operation that changes a repository
+(commit, stage, merge, push, …), so it behaves exactly like your terminal — including your existing
+credential helpers and SSH setup.
 
 ## Download & install
 
 Grab the installer for your OS from the
-[latest release](https://github.com/VolodymyrPanasyuk/spoon-app/releases/latest).
+[Releases page](https://github.com/VolodymyrPanasyuk/spoon-app/releases) — every release published so far is
+a prerelease, so pick the newest one at the top of the list.
+
+Two things about the file names in the tables below: beta installers carry `-beta` in their names (that part
+goes away when a stable release ships), and every release also publishes `*.nupkg` and `releases*.json`
+files that are **not** meant for direct download — they are the feed and payload Spoon's own auto-updater
+reads.
 
 ### Windows
 
 | File | What it is |
 | --- | --- |
-| `Setup.exe` | Recommended. Installs Spoon and enables in-app auto-update. |
+| `Spoon-win-beta-Setup.exe` | Recommended. Installs Spoon and enables in-app auto-update. |
 | `Spoon-<version>.msi` | For silent/managed deployment (Group Policy, SCCM, Intune). Does **not** auto-update — redeploy a newer `.msi` to upgrade. |
 
 Run the installer, click through the SmartScreen warning as described [above](#a-note-on-unsigned-installers).
@@ -79,7 +97,7 @@ Run the installer, click through the SmartScreen warning as described [above](#a
 
 | File | What it is |
 | --- | --- |
-| `Setup.pkg` | Installs the Spoon `.app` and enables in-app auto-update. |
+| `Spoon-osx-beta-Setup.pkg` | Installs the Spoon `.app` and enables in-app auto-update. |
 
 **Apple Silicon (M1/M2/M3…) only.** The published `.pkg` is built for `arm64`; it will not run on an
 Intel Mac, and Rosetta doesn't help here (it translates x86_64 → arm64, not the other way around). Intel
@@ -109,7 +127,8 @@ Notes:
 
 Every release publishes a `SHA256SUMS` manifest and a detached GPG signature, `SHA256SUMS.asc`, alongside
 the installers. The public key is published in this repository as
-[`SPOON-GPG-KEY.asc`](SPOON-GPG-KEY.asc).
+[`SPOON-GPG-KEY.asc`](SPOON-GPG-KEY.asc); its fingerprint is
+`451D 1B4F 3F3C 010B 6843 3C3F 5372 2859 4565 3FE0`.
 
 ```bash
 # 1. Import the public key once (skip this if you've already imported it before)
@@ -123,11 +142,15 @@ sha256sum --ignore-missing -c SHA256SUMS      # Linux
 shasum -a 256 --ignore-missing -c SHA256SUMS  # macOS
 ```
 
+`gpg --verify` warns that the key "is not certified with a trusted signature". That warning is expected and
+is **not** a failure — it only means you haven't personally signed this key. What matters is the
+`Good signature from "Spoon Releases"` line, and that the fingerprint `gpg` prints matches the one above.
+
 On Windows (PowerShell), compute the hash and compare it by hand against the matching line in
 `SHA256SUMS`:
 
 ```powershell
-Get-FileHash .\Setup.exe -Algorithm SHA256
+Get-FileHash .\Spoon-win*Setup.exe -Algorithm SHA256
 ```
 
 This confirms supply-chain **integrity** — that the file matches what was actually published here — which
@@ -141,18 +164,26 @@ is independent of, and doesn't remove, the OS-level SmartScreen/Gatekeeper warni
 | macOS `Setup.pkg` | In-app: **Settings → Check for updates** |
 | Linux AppImage | In-app: **Settings → Check for updates** |
 | Windows `.msi` | Redeploy a newer `.msi` |
-| Linux `.deb` / `.rpm` / `.pkg.tar.zst` | Your OS package manager (`apt`/`dnf`/`pacman`) |
+| Linux `.deb` / `.rpm` / `.pkg.tar.zst` | In-app: **Settings → Check for updates** downloads the new package, checks its GPG signature, and hands you the exact `apt`/`dnf`/`pacman` command to finish the install yourself |
 | Linux `.flatpak` | `flatpak update` |
+
+For the `.deb`/`.rpm`/`.pkg.tar.zst` hand-over, Spoon needs `gpg` on your `PATH` to check the signature; if
+it isn't there, Spoon still offers the download but says plainly that the signature went unchecked. The
+hand-over is only offered to installs that actually came from one of those packages — otherwise Spoon falls
+back to telling you to update through your package manager.
 
 ## What's inside
 
 - A commit graph with a full commit-detail panel, per-hunk diff staging with unified/split views, and
   live refresh as your working tree changes.
-- Branches, tags, and remotes as a collapsible tree, with merge, rebase, cherry-pick, stash, and reflog
-  recovery.
+- Branches, tags, and remotes as a collapsible tree, with merge, interactive rebase, cherry-pick, stash,
+  and reflog recovery.
 - Per-line blame and per-file history.
-- Connect a GitHub or GitLab account (personal access token, stored in your OS keychain) to browse and
-  clone your repositories.
+- Worktrees and submodules managed from the same sidebar — list, add, and remove worktrees; view,
+  initialize, and update submodules, recursively if you want.
+- Connect a GitHub or GitLab account — personal access token or in-browser sign-in, stored in your OS
+  keychain, self-hosted instances included — to browse and clone repositories, and to list and create
+  pull/merge requests.
 - Dark, light, or follow-OS theming; resizable, persisted layout.
 
 This list is intentionally short.
